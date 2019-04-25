@@ -42,6 +42,25 @@ void HwCfgInit()
 	/////////////
 	CfgPINOut(Uart6DRE);//RS485 RDE Signal
 	CfgPINOut(DOCans);//RS485 RDE Signal	////////////
+	
+	CfgPINOut(SSN1);
+	CfgPINOut(SSN2);
+	CfgPINOut(SSN3);
+	CfgPINOut(SSN4);
+	CfgPINOut(SSN5);
+	CfgPINOut(SSN6);
+	CfgPINOut(SSN7);
+	CfgPINOut(SSN8);
+	
+	CfgPINIn(DRDY1);
+	CfgPINIn(DRDY2);
+	CfgPINIn(DRDY3);
+	CfgPINIn(DRDY4);
+	CfgPINIn(DRDY5);
+	CfgPINIn(DRDY6);
+	CfgPINIn(DRDY7);
+	CfgPINIn(DRDY8);
+	
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//设置系统中断优先级分组2
 	////////////
 	STMFLASH_Read(FLASH_SAVE_ADDR,( uint32_t * )ReadTemp,100);
@@ -70,7 +89,7 @@ void HwCfgInit()
 	}
 	////////////
 	CfgUartx(Uartx3,gSystemPara.RS232Bauderate,Uart3TX,Uart3RX);
-	CfgUartx(Uartx1,gSystemPara.RS485Bauderate,Uart6TX,Uart6RX);
+	CfgUartx(Uartx6,gSystemPara.RS485Bauderate,Uart6TX,Uart6RX);
 	Uart6RS485RE;//
 	////////////
 	TimCfg(1000,TIMx3);
@@ -145,6 +164,11 @@ uint32_t GPIO2APB2CLK(uint32_t  GPIOx)
 		case Uartx1:
 			return RCC_APB2Periph_USART1;
 			break;
+		
+		case Uartx3:
+			return RCC_APB1Periph_USART3;
+			break;
+		
 		case Uartx6:
 			return RCC_APB2Periph_USART6;
 			break;
@@ -161,6 +185,11 @@ uint8_t UAartAFR(uint32_t UartX)
 		case USART1_BASE: 
 			return GPIO_AF_USART1;
 			break;
+		
+		case USART3_BASE: 
+			return GPIO_AF_USART3;
+			break;
+		
 		case USART6_BASE:
 			return GPIO_AF_USART6;
 			break;

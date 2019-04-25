@@ -218,6 +218,10 @@ typedef struct SysParameter_type
 	uint8_t  MagTapWide;//0-30 1- 50;
 	uint8_t  MountDir;//0-default 1- back;
 	uint8_t  SensityValve;
+	///////////////////////////
+	int32_t  Offset_Basic[10];
+	int8_t  Dev_Factor[10];
+	///////////////////////////
 }SysParameter_type;
 
 extern UrtBuf_type Uart1Data;

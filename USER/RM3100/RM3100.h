@@ -28,6 +28,13 @@ typedef struct
 	int16_t XsectionNum;
 	int16_t TempCount[5];
 	int16_t ResTimeStamp[5];
+	////////////////
+	int32_t RawData[10];	
+	float ValWeigh_g[10];	
+	bool	cmdSetZero[10];
+	bool  cmdCalWeigh[10];
+	float SetcalWeigh[10];
+	////////////////
 } MagnetType; 
 
 typedef struct

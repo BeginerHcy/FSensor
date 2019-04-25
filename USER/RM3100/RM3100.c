@@ -15,9 +15,10 @@ uint8_t Parameter1[100] = {0};
 uint8_t ReadTemp1[100] = {0};
 extern u8 dir;
 extern u16 led0pwmval; 
+#define	BasicFactor -429.4967f
 bool flashLED[10];
 uint8_t SensorErro = 0;
-uint32_t TimeStamp,oldTimeStamp,deltaStamp,OldStamp[10],TimeStamp500ms;
+uint32_t TimeStamp,oldTimeStamp,deltaStamp,OldStamp[10],TimeStamp500ms,stableTime[10];
 int16_t SensorValue[15] = {0};//
 int16_t sendValve[30]=
 {80,
@@ -38,11 +39,13 @@ PassiveCanData CanSendBuf;
 //SysParameter_type gSystemPara;
 int8_t polarSign[2]={1,-1};
 void polyfit(int n,float *x,float *y,int poly_n,float a[]);
-	
+int32_t Read_HX712(uint32_t GPIOOx,uint16_t GPIO_OPin, GPIOMode_TypeDef GPIOOMode, GPIOPuPd_TypeDef GPIOOPupd,GPIOOType_TypeDef OOType,
+	                       uint32_t GPIOx, uint16_t GPIO_Pin,  GPIOMode_TypeDef GPIOMode,  GPIOPuPd_TypeDef GPIOPupd);
 void usec_delay(unsigned int t)
 {
 	delay_us(10);
 	//for(int i = 0;i<5;i++);
+	
 }
 
 /*************************************************************************
@@ -223,13 +226,67 @@ bool DataReady(uint8_t DeviceNum)
 //int32_t* MagIC_Measurement_All(void)
 void MagIC_Measurement_All(void)
 {
-	///////////////////////////////////////////////////////////////////
-	led0pwmval = 500;
-	TIM_SetCompare4(TIM8,led0pwmval);	
-	/////AutoSendData////
+	
+	uint8_t i;
+	float TempFactor[8];
+	int32_t WeighTemp[8],oldWeigh[8];
+	
+		/////AutoSendData/////
 	if(TimeStamp>=oldTimeStamp)
 		deltaStamp = TimeStamp - oldTimeStamp;
 	oldTimeStamp = TimeStamp;
+	///////////////////////////////////////////////////////////////////	
+	MagnetSensors.RawData[0] = Read_HX712(SSN1,DRDY1);
+	MagnetSensors.RawData[1] = Read_HX712(SSN2,DRDY2);
+	MagnetSensors.RawData[2] = Read_HX712(SSN3,DRDY3);
+	MagnetSensors.RawData[3] = Read_HX712(SSN4,DRDY4);
+	MagnetSensors.RawData[4] = Read_HX712(SSN5,DRDY5);
+	MagnetSensors.RawData[5] = Read_HX712(SSN6,DRDY6);
+	MagnetSensors.RawData[6] = Read_HX712(SSN7,DRDY7);
+	MagnetSensors.RawData[7] = Read_HX712(SSN8,DRDY8);
+	//////////////////////////////////////////////////////////////////////////////
+	for(i=0;i<8;i++){
+		////////////////////////////////////////////////////////////////////////////
+		if(MagnetSensors.cmdSetZero[i]){//Set Zero offset
+			gSystemPara.Offset_Basic[i] = MagnetSensors.RawData[i];
+			MagnetSensors.cmdSaveParameter = 1;
+			MagnetSensors.cmdSetZero[i] = 0;
+		}
+		////////////////////////////////////////////////////////////////////////////
+		WeighTemp[i] = fabs(MagnetSensors.ValWeigh_g[i] / 10.0);
+		if(WeighTemp[i]>=1 && WeighTemp[i]<3){//Auto set Zero,
+			if(oldWeigh[i] == WeighTemp[i]){//if the result is stable 
+				stableTime[i]+=deltaStamp;
+			}
+			else
+				stableTime[i] = 0;
+		}
+		else
+			stableTime[i] = 0;
+		if(stableTime[i]>5000){
+			MagnetSensors.cmdSetZero[i] = (gSystemPara.MountDir==1) ;
+			stableTime[i] = 0;
+		}
+		////////////////////////////////////////////////////////////////////////////
+		oldWeigh[i] = WeighTemp[i];
+		////////////////////////////////////////////////////////////////////////////
+		if(MagnetSensors.cmdCalWeigh[i]){//cal mount Factor or manuafactor Devi Factor
+			if(MagnetSensors.ValWeigh_g[i]!=0 && MagnetSensors.SetcalWeigh[i]!=0){
+				TempFactor[i] = 4000.0 * (1 - (MagnetSensors.SetcalWeigh[i] / (( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / BasicFactor)));
+				if(TempFactor[i]>120 && TempFactor[i]<120){//Only within 14 degrees allow;
+					gSystemPara.Dev_Factor[i] = TempFactor[i];
+					MagnetSensors.cmdSaveParameter = 1;			
+				}
+			}
+			MagnetSensors.cmdCalWeigh[i] = 0;
+		}
+		////////////////////////////////////////////////////////////////////////////
+		MagnetSensors.ValWeigh_g[i] = ( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / ( 1 - ( gSystemPara.Dev_Factor[i] / 4000.0 )) / BasicFactor;
+	}
+	///////////////////////////////////////////////////////////////////
+	led0pwmval = 500;
+	TIM_SetCompare4(TIM8,led0pwmval);	
+
 		
 	if(MagnetSensors.cmdPCConnect){
 			OldStamp[5]+=deltaStamp;
@@ -586,4 +643,32 @@ uint16_t CRC_Verify(uint8_t *CRC_Buf,uint8_t Buf_Length)
 		}
 	}
 	return wCrc;
+}
+int32_t Read_HX712(uint32_t GPIOOx,uint16_t GPIO_OPin, GPIOMode_TypeDef GPIOOMode, GPIOPuPd_TypeDef GPIOOPupd,GPIOOType_TypeDef OOType,
+	                       uint32_t GPIOx, uint16_t GPIO_Pin,  GPIOMode_TypeDef GPIOMode,  GPIOPuPd_TypeDef GPIOPupd)  
+{ 
+	int32_t val = 0; 
+	unsigned char i = 0; 
+
+	GPIO_SetBits((GPIO_TypeDef *)GPIOx,GPIO_Pin);    	//DOUT=1 
+	GPIO_ResetBits((GPIO_TypeDef *)GPIOOx,GPIO_OPin);    	//SCK=0
+	////////////////////////////////////////////////////////////
+	while(GPIO_ReadInputDataBit((GPIO_TypeDef *)GPIOx,GPIO_Pin));   //DOUT=0  
+	delay_us(1); 
+	for(i=0;i<24;i++) 
+	{
+		GPIO_SetBits((GPIO_TypeDef *)GPIOOx,GPIO_OPin);    //SCK=1 
+		val=val<<1; 
+		delay_us(1);  
+		GPIO_ResetBits((GPIO_TypeDef *)GPIOOx,GPIO_OPin);    //SCK=0 
+		if(GPIO_ReadInputDataBit((GPIO_TypeDef *)GPIOx,GPIO_Pin))   //DOUT=1 
+		val++; 
+		delay_us(1); 
+	}
+	GPIO_SetBits((GPIO_TypeDef *)GPIOOx,GPIO_OPin);
+	delay_us(1);
+	val = val^0x800000;
+	GPIO_ResetBits((GPIO_TypeDef *)GPIOOx,GPIO_OPin); 
+	delay_us(1);  
+	return val;  
 }

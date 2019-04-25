@@ -119,6 +119,11 @@
       <TargetDriverDllRegistry>
         <SetRegEntry>
           <Number>0</Number>
+          <Key>DLGUARM</Key>
+          <Name>????趏盻</Name>
+        </SetRegEntry>
+        <SetRegEntry>
+          <Number>0</Number>
           <Key>ARMRTXEVENTFLAGS</Key>
           <Name>-L70 -Z18 -C0 -M0 -T1</Name>
         </SetRegEntry>
@@ -248,12 +253,12 @@
         <Ww>
           <count>20</count>
           <WinNumber>1</WinNumber>
-          <ItemText>oldTimeStamp</ItemText>
+          <ItemText>stableTime</ItemText>
         </Ww>
         <Ww>
           <count>21</count>
           <WinNumber>1</WinNumber>
-          <ItemText>oldTimeStamp</ItemText>
+          <ItemText>deltaStamp</ItemText>
         </Ww>
         <Ww>
           <count>22</count>
@@ -268,7 +273,7 @@
         <Ww>
           <count>24</count>
           <WinNumber>1</WinNumber>
-          <ItemText>MagnetSensors.ResTimeStamp</ItemText>
+          <ItemText>Weigh</ItemText>
         </Ww>
         <Ww>
           <count>25</count>
@@ -398,7 +403,7 @@
       <GroupNumber>1</GroupNumber>
       <FileNumber>5</FileNumber>
       <FileType>1</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\BxHwCfg\HwCfg.c</PathWithFileName>
