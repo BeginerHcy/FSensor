@@ -34,7 +34,9 @@ typedef struct
 	bool	cmdSetZero[10];
 	bool  cmdCalWeigh[10];
 	float SetcalWeigh[10];
+	float ValWeigh_g_flt[10];
 	////////////////
+	MoveStrutType MvgFlt[10];
 } MagnetType; 
 
 typedef struct
@@ -50,6 +52,7 @@ typedef struct
 bool ComRequestCap(UrtBuf_type * pSrcBuf);
 bool HandShakeCap(UrtBuf_type * pSrcBuf);
 bool PCChangeParCap(UrtBuf_type * pSrcBuf);
+bool PCChangeIDCap(UrtBuf_type * pSrcBuf);
 uint16_t CRC_Verify(uint8_t *CRC_Buf,uint8_t Buf_Length);
 extern uint8_t SensorErro;
 extern uint8_t MalfunctionDeviceNum;

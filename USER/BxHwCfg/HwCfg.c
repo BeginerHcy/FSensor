@@ -31,6 +31,47 @@ void SystemConfig()
 	HwCfgInit();
 	////////////
 };
+
+double MoveAvgFilter(MoveStrutType * pFunData)
+{
+	double SumBuffer=0;
+	u32 indexCal=0;
+	double temN=pFunData->Ntime;//Byte
+	u32 BufSizeByte=sizeof(pFunData->buffer)/sizeof(double);
+	u32 BufLenMin=sizeof(pFunData->buffer)-sizeof(double);
+	///////
+	ArryMLO(&pFunData->buffer[0],temN);
+	///////
+	pFunData->buffer[0] = pFunData->x;
+	//////
+	if(temN>=BufSizeByte) temN=BufSizeByte;
+	
+	if(temN==0) temN=1;
+	//////
+	pFunData->Nfilled++;
+	//////
+	if(pFunData->Nfilled>=temN)pFunData->Nfilled=temN;
+	SumBuffer=0;
+	/////
+	for(indexCal=0;indexCal<pFunData->Nfilled;indexCal++)
+	{
+		 SumBuffer = SumBuffer + pFunData->buffer[indexCal];
+	}
+	/////
+	pFunData->y =  SumBuffer/pFunData->Nfilled;
+	return pFunData->y;
+	
+};
+void ArryMLO(double* buf,u32 bufByte)
+{
+	//u32 bufByte = sizeof(buf)/sizeof(buf[0]);
+	u32 iBuf=0;
+	while(iBuf+1<bufByte)
+	{
+		iBuf++;
+		buf[bufByte-iBuf] = buf[bufByte-iBuf-1];
+	}
+};
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////

@@ -201,7 +201,14 @@ typedef struct UrtBufint_type
 	uint8_t  sLen;
 	uint8_t  flagS;
 }UrtBufint_type;
-
+typedef struct MoveStrutType
+{
+	double x;
+	double Ntime;
+	double buffer[200];
+	uint32_t  Nfilled;
+	double y;
+}MoveStrutType;
 typedef struct SysParameter_type
 {
 	uint8_t	 BufferHead;
@@ -220,7 +227,7 @@ typedef struct SysParameter_type
 	uint8_t  SensityValve;
 	///////////////////////////
 	int32_t  Offset_Basic[10];
-	int8_t  Dev_Factor[10];
+	int16_t  Dev_Factor[10];
 	///////////////////////////
 }SysParameter_type;
 
@@ -258,3 +265,5 @@ void FillUrtBuf(UrtBuf_type * pBoxIO,uint32_t USARTx);
 extern void SendUrtBuf(UrtBuf_type * pBoxIO,uint32_t USARTx);
 void MBLArry(uint8_t *buffer,uint8_t bufLen);
 void TimCfg(uint32_t timeUs ,uint32_t BASEType);
+double MoveAvgFilter(MoveStrutType* pFunData);
+void ArryMLO(double* buf,u32 bufByte);

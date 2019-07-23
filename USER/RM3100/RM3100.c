@@ -15,7 +15,7 @@ uint8_t Parameter1[100] = {0};
 uint8_t ReadTemp1[100] = {0};
 extern u8 dir;
 extern u16 led0pwmval; 
-#define	BasicFactor -429.4967f
+#define	BasicFactor 429.4967f
 bool flashLED[10];
 uint8_t SensorErro = 0;
 uint32_t TimeStamp,oldTimeStamp,deltaStamp,OldStamp[10],TimeStamp500ms,stableTime[10];
@@ -47,7 +47,7 @@ void usec_delay(unsigned int t)
 	//for(int i = 0;i<5;i++);
 	
 }
-
+void subCyc10msTask(void);
 /*************************************************************************
 * Function Name : SPI_tom_CS_LOW
 * Description : selects the 3D MagIC CS
@@ -216,6 +216,16 @@ bool DataReady(uint8_t DeviceNum)
 		default : return false;
 	}
 }
+void subCyc10msTask(void){
+
+	for(u8 i=0;i<8;i++){
+		MagnetSensors.MvgFlt[i].x = 0.4 * MagnetSensors.ValWeigh_g[i] + 0.6 * MagnetSensors.MvgFlt[i].x;
+		MagnetSensors.MvgFlt[i].Ntime = 10;//max 200,
+		MoveAvgFilter(&MagnetSensors.MvgFlt[i]);
+		MagnetSensors.ValWeigh_g_flt[i] = MagnetSensors.MvgFlt[i].y;
+		MagnetSensors.SensorValue[i] = fabs(MagnetSensors.ValWeigh_g_flt[i])>32767?32767:MagnetSensors.ValWeigh_g_flt[i];
+	}
+}
 /*************************************************************************
 * Function Name : MagIC_Measurement_All()
 * Description : Read All measurement
@@ -229,21 +239,32 @@ void MagIC_Measurement_All(void)
 	
 	uint8_t i;
 	float TempFactor[8];
-	int32_t WeighTemp[8],oldWeigh[8];
-	
-		/////AutoSendData/////
+	int32_t WeighTemp[8],oldWeigh[8],TempRaw[8];
+	/////AutoSendData/////
 	if(TimeStamp>=oldTimeStamp)
 		deltaStamp = TimeStamp - oldTimeStamp;
 	oldTimeStamp = TimeStamp;
 	///////////////////////////////////////////////////////////////////	
-	MagnetSensors.RawData[0] = Read_HX712(SSN1,DRDY1);
-	MagnetSensors.RawData[1] = Read_HX712(SSN2,DRDY2);
-	MagnetSensors.RawData[2] = Read_HX712(SSN3,DRDY3);
-	MagnetSensors.RawData[3] = Read_HX712(SSN4,DRDY4);
-	MagnetSensors.RawData[4] = Read_HX712(SSN5,DRDY5);
-	MagnetSensors.RawData[5] = Read_HX712(SSN6,DRDY6);
-	MagnetSensors.RawData[6] = Read_HX712(SSN7,DRDY7);
-	MagnetSensors.RawData[7] = Read_HX712(SSN8,DRDY8);
+	TempRaw[0] = Read_HX712(SSN1,DRDY1);
+	TempRaw[1] = Read_HX712(SSN2,DRDY2);
+	TempRaw[2] = Read_HX712(SSN3,DRDY3);
+	TempRaw[3] = Read_HX712(SSN4,DRDY4);
+	TempRaw[4] = Read_HX712(SSN5,DRDY5);
+	TempRaw[5] = Read_HX712(SSN6,DRDY6);
+	TempRaw[6] = Read_HX712(SSN7,DRDY7);
+	TempRaw[7] = Read_HX712(SSN8,DRDY8);
+	
+	
+	MagnetSensors.RawData[0] = (TempRaw[0]==0x007FFFFF||TempRaw[0]==0x008FFFFF)?MagnetSensors.RawData[0]:TempRaw[0];
+	MagnetSensors.RawData[1] = (TempRaw[1]==0x007FFFFF||TempRaw[1]==0x008FFFFF)?MagnetSensors.RawData[1]:TempRaw[1];
+	MagnetSensors.RawData[2] = (TempRaw[2]==0x007FFFFF||TempRaw[2]==0x008FFFFF)?MagnetSensors.RawData[2]:TempRaw[2];
+	MagnetSensors.RawData[3] = (TempRaw[3]==0x007FFFFF||TempRaw[3]==0x008FFFFF)?MagnetSensors.RawData[3]:TempRaw[3];
+	MagnetSensors.RawData[4] = (TempRaw[4]==0x007FFFFF||TempRaw[4]==0x008FFFFF)?MagnetSensors.RawData[4]:TempRaw[4];
+	MagnetSensors.RawData[5] = (TempRaw[5]==0x007FFFFF||TempRaw[5]==0x008FFFFF)?MagnetSensors.RawData[5]:TempRaw[5];
+	MagnetSensors.RawData[6] = (TempRaw[6]==0x007FFFFF||TempRaw[6]==0x008FFFFF)?MagnetSensors.RawData[6]:TempRaw[6];
+	MagnetSensors.RawData[7] = (TempRaw[7]==0x007FFFFF||TempRaw[7]==0x008FFFFF)?MagnetSensors.RawData[7]:TempRaw[7];
+	
+	
 	//////////////////////////////////////////////////////////////////////////////
 	for(i=0;i<8;i++){
 		////////////////////////////////////////////////////////////////////////////
@@ -254,7 +275,7 @@ void MagIC_Measurement_All(void)
 		}
 		////////////////////////////////////////////////////////////////////////////
 		WeighTemp[i] = fabs(MagnetSensors.ValWeigh_g[i] / 10.0);
-		if(WeighTemp[i]>=1 && WeighTemp[i]<3){//Auto set Zero,
+		if(WeighTemp[i]>=1 && WeighTemp[i]<gSystemPara.SensityValve/10){//Auto set Zero,
 			if(oldWeigh[i] == WeighTemp[i]){//if the result is stable 
 				stableTime[i]+=deltaStamp;
 			}
@@ -272,10 +293,10 @@ void MagIC_Measurement_All(void)
 		////////////////////////////////////////////////////////////////////////////
 		if(MagnetSensors.cmdCalWeigh[i]){//cal mount Factor or manuafactor Devi Factor
 			if(MagnetSensors.ValWeigh_g[i]!=0 && MagnetSensors.SetcalWeigh[i]!=0){
-				TempFactor[i] = 4000.0 * (1 - (MagnetSensors.SetcalWeigh[i] / (( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / BasicFactor)));
-				if(TempFactor[i]>120 && TempFactor[i]<120){//Only within 14 degrees allow;
+				TempFactor[i] = 4000.0 * ((MagnetSensors.SetcalWeigh[i] / (( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / BasicFactor))-1);
+				if(TempFactor[i]>-500 && TempFactor[i]<500){//Only within 14 degrees allow;
 					gSystemPara.Dev_Factor[i] = TempFactor[i];
-					MagnetSensors.cmdSaveParameter = 1;			
+					MagnetSensors.cmdSaveParameter = 1;	
 				}
 			}
 			MagnetSensors.cmdCalWeigh[i] = 0;
@@ -287,6 +308,12 @@ void MagIC_Measurement_All(void)
 	led0pwmval = 500;
 	TIM_SetCompare4(TIM8,led0pwmval);	
 
+	
+	OldStamp[6]+=deltaStamp;
+		if(OldStamp[6]>10){
+		OldStamp[6] = 0;
+		subCyc10msTask();
+	}
 		
 	if(MagnetSensors.cmdPCConnect){
 			OldStamp[5]+=deltaStamp;
@@ -396,6 +423,9 @@ void MagIC_Measurement_All(void)
 	if(PCChangeParCap(&Uart3Data)){//RS232
 		MagnetSensors.cmdSaveParameter = 1;
 	}
+	if(PCChangeIDCap(&Uart3Data)){//RS232
+		MagnetSensors.ReqSetOKAllow = 1;
+	}
 	//////////////////////////////////////////////////
 	//////////////////////////////////////////////////
 	///////////////Parameter save or initial//////////
@@ -465,6 +495,39 @@ bool PCChangeParCap(UrtBuf_type * pSrcBuf){
 					gSystemPara.MagSensity = pSrcBuf->rBuffer[degred+16];
 					gSystemPara.MagTapWide = pSrcBuf->rBuffer[degred+17];
 					gSystemPara.MountDir = pSrcBuf->rBuffer[degred+18];
+					result = 1;
+				}
+		}
+	}
+	return result;
+}
+bool PCChangeIDCap(UrtBuf_type * pSrcBuf){
+	uint8_t filled = pSrcBuf->pRfil,SensorIndex;
+	uint8_t degred = pSrcBuf->pRder;
+	uint8_t iFunCode=5,iLenCode=4,iDstSta=3,iSrcSta=2;
+	uint8_t chnOKBfLen = 14;
+	uint16_t cycResult;
+	bool result=0;
+	///
+	result = 0;
+	///
+
+	if(filled >= degred+ chnOKBfLen)//1. Len enough.
+	{
+		for(;degred<=filled-1;degred++)
+		{
+			if( pSrcBuf->rBuffer[degred]==0xAA && 
+					pSrcBuf->rBuffer[degred+1]==0x51&&
+					pSrcBuf->rBuffer[degred+2]==0x0B&&
+					pSrcBuf->rBuffer[degred+3]==0x00&&
+					pSrcBuf->rBuffer[degred+4]==0x00&&
+					pSrcBuf->rBuffer[degred+13]==0xAC)
+				{
+					pSrcBuf->pRder = degred+chnOKBfLen-1;
+					SensorIndex = pSrcBuf->rBuffer[degred+5];
+					MagnetSensors.SetcalWeigh[SensorIndex-1] 	= pSrcBuf->rBuffer[degred+6] * 100.0;
+					MagnetSensors.cmdSetZero[SensorIndex-1] 	= (pSrcBuf->rBuffer[degred+7]==1);
+					MagnetSensors.cmdCalWeigh[SensorIndex-1] 	= (pSrcBuf->rBuffer[degred+8]==1);
 					result = 1;
 				}
 		}
