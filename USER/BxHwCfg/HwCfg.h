@@ -221,10 +221,10 @@ typedef struct SysParameter_type
 	uint8_t	 CANBusBauderate;//0-125k 1-250k 2-500k 3-1000k 
 	uint8_t  DataAnsMethod;//0-automate 1-passive
 	uint8_t  RequestInterval;//0-4ms 1-10ms  2-20ms 3-40ms 4-100ms
-	uint8_t  MagSensity;//0-80 1-150 2-200 3-250 4-300;
+	int8_t  WeightRateKg;//0-80 1-150 2-200 3-250 4-300;
 	uint8_t  MagTapWide;//0-30 1- 50;
-	uint8_t  MountDir;//0-default 1- back;
-	uint8_t  SensityValve;
+	uint8_t  EnableAutoRest;//0-default 1- back;
+	uint8_t  AutoSetZeroValue;//g
 	///////////////////////////
 	int32_t  Offset_Basic[10];
 	int16_t  Dev_Factor[10];
@@ -233,6 +233,7 @@ typedef struct SysParameter_type
 
 extern UrtBuf_type Uart1Data;
 extern UrtBuf_type Uart3Data;
+extern UrtBuf_type Uart6Data;
 extern SysParameter_type gSystemPara;
 ////////////////some Function to config the Hardware
 void SystemConfig();

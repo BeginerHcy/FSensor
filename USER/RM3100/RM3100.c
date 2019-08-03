@@ -38,6 +38,7 @@ MagnetType MagnetSensors;
 PassiveCanData CanSendBuf;
 //SysParameter_type gSystemPara;
 int8_t polarSign[2]={1,-1};
+float scaleRateWeight,weigfltTemp[15];
 void polyfit(int n,float *x,float *y,int poly_n,float a[]);
 int32_t Read_HX712(uint32_t GPIOOx,uint16_t GPIO_OPin, GPIOMode_TypeDef GPIOOMode, GPIOPuPd_TypeDef GPIOOPupd,GPIOOType_TypeDef OOType,
 	                       uint32_t GPIOx, uint16_t GPIO_Pin,  GPIOMode_TypeDef GPIOMode,  GPIOPuPd_TypeDef GPIOPupd);
@@ -219,11 +220,16 @@ bool DataReady(uint8_t DeviceNum)
 void subCyc10msTask(void){
 
 	for(u8 i=0;i<8;i++){
+		//weigfltTemp[i] = MagnetSensors.ValWeigh_g[i]> gSystemPara.WeightRateKg*1000?weigfltTemp[i]:MagnetSensors.ValWeigh_g[i];
 		MagnetSensors.MvgFlt[i].x = 0.4 * MagnetSensors.ValWeigh_g[i] + 0.6 * MagnetSensors.MvgFlt[i].x;
 		MagnetSensors.MvgFlt[i].Ntime = 10;//max 200,
 		MoveAvgFilter(&MagnetSensors.MvgFlt[i]);
 		MagnetSensors.ValWeigh_g_flt[i] = MagnetSensors.MvgFlt[i].y;
-		MagnetSensors.SensorValue[i] = fabs(MagnetSensors.ValWeigh_g_flt[i])>32767?32767:MagnetSensors.ValWeigh_g_flt[i];
+		MagnetSensors.SensorValueTemp[i] = fabs(MagnetSensors.ValWeigh_g_flt[i])>32767?32767:MagnetSensors.ValWeigh_g_flt[i];
+		MagnetSensors.SensorValue[i] = MagnetSensors.SensorValueTemp[i]>gSystemPara.WeightRateKg*1000?MagnetSensors.SensorValue[i]:MagnetSensors.SensorValueTemp[i];
+		//MagnetSensors.SensorValue[i] = MagnetSensors.ValWeigh_g[i];
+		//MagnetSensors.SensorValue[1] = MagnetSensors.RawData[0] & 0xFFFF;
+		//MagnetSensors.SensorValue[2] = MagnetSensors.RawData[0]>>16 & 0xFFFF;
 	}
 }
 /*************************************************************************
@@ -255,14 +261,14 @@ void MagIC_Measurement_All(void)
 	TempRaw[7] = Read_HX712(SSN8,DRDY8);
 	
 	
-	MagnetSensors.RawData[0] = (TempRaw[0]==0x007FFFFF||TempRaw[0]==0x008FFFFF)?MagnetSensors.RawData[0]:TempRaw[0];
-	MagnetSensors.RawData[1] = (TempRaw[1]==0x007FFFFF||TempRaw[1]==0x008FFFFF)?MagnetSensors.RawData[1]:TempRaw[1];
-	MagnetSensors.RawData[2] = (TempRaw[2]==0x007FFFFF||TempRaw[2]==0x008FFFFF)?MagnetSensors.RawData[2]:TempRaw[2];
-	MagnetSensors.RawData[3] = (TempRaw[3]==0x007FFFFF||TempRaw[3]==0x008FFFFF)?MagnetSensors.RawData[3]:TempRaw[3];
-	MagnetSensors.RawData[4] = (TempRaw[4]==0x007FFFFF||TempRaw[4]==0x008FFFFF)?MagnetSensors.RawData[4]:TempRaw[4];
-	MagnetSensors.RawData[5] = (TempRaw[5]==0x007FFFFF||TempRaw[5]==0x008FFFFF)?MagnetSensors.RawData[5]:TempRaw[5];
-	MagnetSensors.RawData[6] = (TempRaw[6]==0x007FFFFF||TempRaw[6]==0x008FFFFF)?MagnetSensors.RawData[6]:TempRaw[6];
-	MagnetSensors.RawData[7] = (TempRaw[7]==0x007FFFFF||TempRaw[7]==0x008FFFFF)?MagnetSensors.RawData[7]:TempRaw[7];
+	MagnetSensors.RawData[0] = (TempRaw[0] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[0]:TempRaw[0];
+	MagnetSensors.RawData[1] = (TempRaw[1] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[1]:TempRaw[1];
+	MagnetSensors.RawData[2] = (TempRaw[2] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[2]:TempRaw[2];
+	MagnetSensors.RawData[3] = (TempRaw[3] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[3]:TempRaw[3];
+	MagnetSensors.RawData[4] = (TempRaw[4] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[4]:TempRaw[4];
+	MagnetSensors.RawData[5] = (TempRaw[5] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[5]:TempRaw[5];
+	MagnetSensors.RawData[6] = (TempRaw[6] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[6]:TempRaw[6];
+	MagnetSensors.RawData[7] = (TempRaw[7] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[7]:TempRaw[7];
 	
 	
 	//////////////////////////////////////////////////////////////////////////////
@@ -274,8 +280,8 @@ void MagIC_Measurement_All(void)
 			MagnetSensors.cmdSetZero[i] = 0;
 		}
 		////////////////////////////////////////////////////////////////////////////
-		WeighTemp[i] = fabs(MagnetSensors.ValWeigh_g[i] / 10.0);
-		if(WeighTemp[i]>=1 && WeighTemp[i]<gSystemPara.SensityValve/10){//Auto set Zero,
+		WeighTemp[i] = fabs(MagnetSensors.ValWeigh_g[i] / 10.0);//because we want to kill the 1g accuracy
+		if(WeighTemp[i]>=1 && WeighTemp[i]<gSystemPara.AutoSetZeroValue/10){//Auto set Zero,
 			if(oldWeigh[i] == WeighTemp[i]){//if the result is stable 
 				stableTime[i]+=deltaStamp;
 			}
@@ -285,15 +291,22 @@ void MagIC_Measurement_All(void)
 		else
 			stableTime[i] = 0;
 		if(stableTime[i]>5000){
-			MagnetSensors.cmdSetZero[i] = (gSystemPara.MountDir==1) ;
+			MagnetSensors.cmdSetZero[i] = (gSystemPara.EnableAutoRest==1) ;
 			stableTime[i] = 0;
 		}
 		////////////////////////////////////////////////////////////////////////////
 		oldWeigh[i] = WeighTemp[i];
 		////////////////////////////////////////////////////////////////////////////
+		if(gSystemPara.WeightRateKg==0){
+			gSystemPara.WeightRateKg = 20;//The default set for the Weiht Rate
+		}
+		scaleRateWeight = gSystemPara.WeightRateKg / 10.0;
+		
 		if(MagnetSensors.cmdCalWeigh[i]){//cal mount Factor or manuafactor Devi Factor
 			if(MagnetSensors.ValWeigh_g[i]!=0 && MagnetSensors.SetcalWeigh[i]!=0){
-				TempFactor[i] = 4000.0 * ((MagnetSensors.SetcalWeigh[i] / (( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / BasicFactor))-1);
+				TempFactor[i] = 4000.0 * ((MagnetSensors.SetcalWeigh[i] / (( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) * scaleRateWeight / BasicFactor))-1);
+				//because this value is very small,so we need to make it bigger.
+				
 				if(TempFactor[i]>-500 && TempFactor[i]<500){//Only within 14 degrees allow;
 					gSystemPara.Dev_Factor[i] = TempFactor[i];
 					MagnetSensors.cmdSaveParameter = 1;	
@@ -302,7 +315,7 @@ void MagIC_Measurement_All(void)
 			MagnetSensors.cmdCalWeigh[i] = 0;
 		}
 		////////////////////////////////////////////////////////////////////////////
-		MagnetSensors.ValWeigh_g[i] = ( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / ( 1 - ( gSystemPara.Dev_Factor[i] / 4000.0 )) / BasicFactor;
+		MagnetSensors.ValWeigh_g[i] = ( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / ( 1 - ( gSystemPara.Dev_Factor[i] / 4000.0 )) * scaleRateWeight / BasicFactor;
 	}
 	///////////////////////////////////////////////////////////////////
 	led0pwmval = 500;
@@ -319,7 +332,10 @@ void MagIC_Measurement_All(void)
 			OldStamp[5]+=deltaStamp;
 		if(OldStamp[5]>200){
 			OldStamp[5] = 0;
+			if(MagnetSensors.handShakeInterface==0)
 				MagnetSensors.cmdSendRS232Data = 1;
+			else
+				MagnetSensors.cmdSendRS485Data = 1;
 		}
 	}
 	if(0==gSystemPara.DataAnsMethod)
@@ -332,9 +348,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[0] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface)//RS485
+					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
+					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
 						MagnetSensors.cmdSendRS232Data = 1;
 				}
 				break;
@@ -345,9 +361,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[1] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface)//RS485
+					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
+					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}
 				break;
@@ -358,9 +374,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[2] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface)//RS485
+					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
+					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}
 				break;
@@ -371,9 +387,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[3] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface)//RS485
+					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
+					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}			
 				break;		
@@ -384,9 +400,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[4] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface)//RS485
+					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
+					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}			
 				break;
@@ -397,9 +413,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[3] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface)//RS485
+					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
+					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}			
 				break;	
@@ -409,7 +425,7 @@ void MagIC_Measurement_All(void)
 	////////COM Interface capture master request//////
 	//////////////////////////////////////////////////
 	if(1==gSystemPara.DataComInterface){//RS485
-		if(ComRequestCap(&Uart1Data))
+		if(ComRequestCap(&Uart6Data))
 			MagnetSensors.cmdSendRS485Data = 1;
 	}
 	else if(2==gSystemPara.DataComInterface){//RS232
@@ -419,11 +435,17 @@ void MagIC_Measurement_All(void)
 	if(HandShakeCap(&Uart3Data)){//RS232
 		MagnetSensors.cmdPCConnect = 1;
 		MagnetSensors.ReqConnectAllow = 1;
+		MagnetSensors.handShakeInterface = 0;
 	}
-	if(PCChangeParCap(&Uart3Data)){//RS232
+	if(HandShakeCap(&Uart6Data)){//RS485
+		MagnetSensors.cmdPCConnect = 1;
+		MagnetSensors.ReqConnectAllow = 1;
+		MagnetSensors.handShakeInterface = 1;
+	}
+	if(PCChangeParCap(&Uart3Data) || PCCalSensor(&Uart6Data)){//RS232 or RS485
 		MagnetSensors.cmdSaveParameter = 1;
 	}
-	if(PCChangeIDCap(&Uart3Data)){//RS232
+	if(PCCalSensor(&Uart3Data) || PCCalSensor(&Uart6Data)){//RS232 or RS485
 		MagnetSensors.ReqSetOKAllow = 1;
 	}
 	//////////////////////////////////////////////////
@@ -448,7 +470,7 @@ void MagIC_Measurement_All(void)
 		gSystemPara.DataAnsMethod = 0;
 		gSystemPara.DataComInterface = 0;
 		gSystemPara.DetectPolar = 0;
-		gSystemPara.MagSensity = 1;
+		gSystemPara.WeightRateKg = 20;
 		gSystemPara.RequestInterval = 2;
 		gSystemPara.RS232Bauderate = 0;
 		gSystemPara.RS485Bauderate = 0;
@@ -482,7 +504,7 @@ bool PCChangeParCap(UrtBuf_type * pSrcBuf){
 					pSrcBuf->rBuffer[degred+19]==0xAC)
 				{
 					pSrcBuf->pRder = degred+chnOKBfLen-1;
-					gSystemPara.SensityValve = pSrcBuf->rBuffer[degred+5];
+					gSystemPara.AutoSetZeroValue = pSrcBuf->rBuffer[degred+5];
 					gSystemPara.DetectPolar = pSrcBuf->rBuffer[degred+6];
 					gSystemPara.DataComInterface = pSrcBuf->rBuffer[degred+7];
 					gSystemPara.RS485Node = pSrcBuf->rBuffer[degred+8];
@@ -492,16 +514,16 @@ bool PCChangeParCap(UrtBuf_type * pSrcBuf){
 					gSystemPara.CANBusBauderate = pSrcBuf->rBuffer[degred+13];
 					gSystemPara.DataAnsMethod = pSrcBuf->rBuffer[degred+14];
 					gSystemPara.RequestInterval = pSrcBuf->rBuffer[degred+15];
-					gSystemPara.MagSensity = pSrcBuf->rBuffer[degred+16];
+					gSystemPara.WeightRateKg = pSrcBuf->rBuffer[degred+16];
 					gSystemPara.MagTapWide = pSrcBuf->rBuffer[degred+17];
-					gSystemPara.MountDir = pSrcBuf->rBuffer[degred+18];
+					gSystemPara.EnableAutoRest = pSrcBuf->rBuffer[degred+18];
 					result = 1;
 				}
 		}
 	}
 	return result;
 }
-bool PCChangeIDCap(UrtBuf_type * pSrcBuf){
+bool PCCalSensor(UrtBuf_type * pSrcBuf){
 	uint8_t filled = pSrcBuf->pRfil,SensorIndex;
 	uint8_t degred = pSrcBuf->pRder;
 	uint8_t iFunCode=5,iLenCode=4,iDstSta=3,iSrcSta=2;

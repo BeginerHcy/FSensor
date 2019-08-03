@@ -2,7 +2,6 @@
 #include "usart.h"
 #include "delay.h"
 #include "arm_math.h"
-//#include "HwCfg.h"
 #include "RM3100.h"
 int main(void)
 {

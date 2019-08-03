@@ -117,7 +117,7 @@ void HwCfgInit()
 		gSystemPara.DataAnsMethod = 0;//auto
 		gSystemPara.DataComInterface = 0;//can
 		gSystemPara.DetectPolar = 0;//N
-		gSystemPara.MagSensity = 1;//150knT
+		gSystemPara.WeightRateKg = 20;//150knT
 		gSystemPara.RequestInterval = 1;//10ms
 		gSystemPara.RS232Bauderate = 0;//38400
 		gSystemPara.RS485Bauderate = 0;//38400
@@ -566,48 +566,64 @@ void TIM3_IRQHandler(void)
 			if(MagnetSensors.cmdSendCanData){//Automatic data format			
 				MagnetSensors.cmdSendCanData = 0;
 				///////////////////////////////////	
-				temp[0] = MagnetSensors.XsectionNum;//->0.1mm
-				if(MagnetSensors.XsectionNum==1){
-					temp[1] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					temp[2] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					temp[3] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-				}
-				else if(MagnetSensors.XsectionNum==2){
-					temp[1] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					temp[2] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					temp[3] = (MagnetSensors.Xsection2 * 0.1)-70;//->0.1mm
-				}
-				else if(MagnetSensors.XsectionNum==3){
-					temp[1] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					temp[2] = (MagnetSensors.Xsection2 * 0.1)-70;//->0.1mm
-					temp[3] = (MagnetSensors.Xsection3 * 0.1)-70;//->0.1mm
-				}
-				else{
-					temp[1] = -120;//->0.1mm
-					temp[2] = -120;//->0.1mm
-					temp[3] = -120;//->0.1mm
-				}
-				temp[4] = CanSendBuf.SenState>>8;
-				temp[5] = CanSendBuf.SenState & 0x0F;
-				CanWriteData(CanSendBuf.CAN_ID,(uint8_t *)temp,6);	
-
+				temp[0] = 1;
+				temp[1] = MagnetSensors.SensorValue[0]>>8;
+				temp[2] = MagnetSensors.SensorValue[0];				
+				temp[3] = MagnetSensors.SensorValue[1]>>8;
+				temp[4] = MagnetSensors.SensorValue[1];			
+				temp[5] = MagnetSensors.SensorValue[2]>>8;
+				temp[6] = MagnetSensors.SensorValue[2];	
+				temp[7] = 0;
+				CanWriteData(CanSendBuf.CAN_ID,(uint8_t *)temp,8);	
+				
+				temp[0] = 1;
+				temp[1] = MagnetSensors.SensorValue[3]>>8;
+				temp[2] = MagnetSensors.SensorValue[3];				
+				temp[3] = MagnetSensors.SensorValue[4]>>8;
+				temp[4] = MagnetSensors.SensorValue[4];			
+				temp[5] = MagnetSensors.SensorValue[5]>>8;
+				temp[6] = MagnetSensors.SensorValue[5];	
+				temp[7] = 0;
+				CanWriteData(CanSendBuf.CAN_ID,(uint8_t *)temp,8);	
+				
+				temp[0] = 1;
+				temp[1] = MagnetSensors.SensorValue[6]>>8;
+				temp[2] = MagnetSensors.SensorValue[6];				
+				temp[3] = MagnetSensors.SensorValue[7]>>8;
+				temp[4] = MagnetSensors.SensorValue[7];			
+				temp[5] = 0;
+				temp[6] = 0;	
+				temp[7] = 0;
+				CanWriteData(CanSendBuf.CAN_ID,(uint8_t *)temp,8);	
 			}
 			//////////////////////////4 8 5////////////////////////////
 			if(MagnetSensors.cmdSendRS485Data){
-				MagnetSensors.cmdSendRS485Data = 0;
-				Uart6Data.sBuffer[0] 	= 0x52;
-				Uart6Data.sBuffer[1] 	= 0x4D;
-				Uart6Data.sBuffer[2] 	= 0x67;
-				Uart6Data.sBuffer[3] 	= 0x73;
-				Uart6Data.sBuffer[4] 	= 0x77;				
-				Uart6Data.sBuffer[5] 	= MagnetSensors.SenState>>8;
-				Uart6Data.sBuffer[6] 	= MagnetSensors.SenState & 0x0F;
-				Uart6Data.sBuffer[7] 	= 0;
-				Uart6Data.sBuffer[8] 	= CRC_Verify((uint8_t *)&Uart6Data.sBuffer[0],8);
-				Uart6Data.sBuffer[9] 	= CRC_Verify((uint8_t *)&Uart6Data.sBuffer[0],8)>>8;
-				Uart6Data.sLen 				= 10;
-				SendUrtBuf(&Uart6Data,Uartx6);
-				
+				MagnetSensors.cmdSendRS485Data = 0;					
+				UartTempData.sBuffer[0] = 0xAA;
+				UartTempData.sBuffer[1] = 0x53;
+				UartTempData.sBuffer[2] = 0x29;
+				UartTempData.sBuffer[3] = 0x01;
+				UartTempData.sBuffer[4] = 0x00;
+				UartTempData.sBuffer[5] = MagnetSensors.SensorValue[0]>>8;
+				UartTempData.sBuffer[6] = MagnetSensors.SensorValue[0];				
+				UartTempData.sBuffer[7] = MagnetSensors.SensorValue[1]>>8;
+				UartTempData.sBuffer[8] = MagnetSensors.SensorValue[1];			
+				UartTempData.sBuffer[9] = MagnetSensors.SensorValue[2]>>8;
+				UartTempData.sBuffer[10] = MagnetSensors.SensorValue[2];			
+				UartTempData.sBuffer[11] = MagnetSensors.SensorValue[3]>>8;
+				UartTempData.sBuffer[12] = MagnetSensors.SensorValue[3];		
+				UartTempData.sBuffer[13] = MagnetSensors.SensorValue[4]>>8;
+				UartTempData.sBuffer[14] = MagnetSensors.SensorValue[4];	
+				UartTempData.sBuffer[15] = MagnetSensors.SensorValue[5]>>8;
+				UartTempData.sBuffer[16] = MagnetSensors.SensorValue[5];
+				UartTempData.sBuffer[17] = MagnetSensors.SensorValue[6]>>8;
+				UartTempData.sBuffer[18] = MagnetSensors.SensorValue[6];
+				UartTempData.sBuffer[19] = MagnetSensors.SensorValue[7]>>8;
+				UartTempData.sBuffer[20] = MagnetSensors.SensorValue[7];															
+				UartTempData.sBuffer[43] = 0xAE;				
+				UartTempData.sLen = 44;
+				SendUrtBuf(&UartTempData,Uartx6);				
+
 			}			
 			//////////////////////////2 3 2////////////////////////////
 			if(MagnetSensors.ReqSetOKAllow){
@@ -621,7 +637,10 @@ void TIM3_IRQHandler(void)
 				Uart3Data.sBuffer[6] = 0xAC;
 				Uart3Data.sLen = 7;
 				MagnetSensors.cmdSendRS232Data = 0;
-				SendUrtBuf(&Uart3Data,Uartx3);
+				if(MagnetSensors.handShakeInterface==0)
+					SendUrtBuf(&Uart3Data,Uartx3);
+				else
+					SendUrtBuf(&Uart3Data,Uartx6);
 			}
 			else if(MagnetSensors.ReqConnectAllow){
 				MagnetSensors.ReqConnectAllow = 0;
@@ -630,7 +649,7 @@ void TIM3_IRQHandler(void)
 				Uart3Data.sBuffer[2] = 0x11;
 				Uart3Data.sBuffer[3] = 0x01;
 				Uart3Data.sBuffer[4] = 0x00;
-				Uart3Data.sBuffer[5] = gSystemPara.SensityValve;
+				Uart3Data.sBuffer[5] = gSystemPara.AutoSetZeroValue;
 				Uart3Data.sBuffer[6] = gSystemPara.DetectPolar;
 				Uart3Data.sBuffer[7] = gSystemPara.DataComInterface;
 				Uart3Data.sBuffer[8] = gSystemPara.RS485Node;
@@ -641,89 +660,41 @@ void TIM3_IRQHandler(void)
 				Uart3Data.sBuffer[13] = gSystemPara.CANBusBauderate;
 				Uart3Data.sBuffer[14] = gSystemPara.DataAnsMethod;
 				Uart3Data.sBuffer[15] = gSystemPara.RequestInterval;
-				Uart3Data.sBuffer[16] = gSystemPara.MagSensity;
+				Uart3Data.sBuffer[16] = gSystemPara.WeightRateKg;
 				Uart3Data.sBuffer[17] = gSystemPara.MagTapWide;
-				Uart3Data.sBuffer[18] = gSystemPara.MountDir;
+				Uart3Data.sBuffer[18] = gSystemPara.EnableAutoRest;
 				Uart3Data.sBuffer[19] = 0xAC;
 				Uart3Data.sLen = 20;
 				MagnetSensors.cmdSendRS232Data = 0;
-				SendUrtBuf(&Uart3Data,Uartx3);
+				if(MagnetSensors.handShakeInterface==0)
+					SendUrtBuf(&Uart3Data,Uartx3);
+				else
+					SendUrtBuf(&Uart3Data,Uartx6);
 			}
-			
 			else if(MagnetSensors.cmdSendRS232Data){
-				MagnetSensors.cmdSendRS232Data = 0;
-				
+				MagnetSensors.cmdSendRS232Data = 0;				
 				UartTempData.sBuffer[0] = 0xAA;
 				UartTempData.sBuffer[1] = 0x53;
 				UartTempData.sBuffer[2] = 0x29;
 				UartTempData.sBuffer[3] = 0x01;
-				UartTempData.sBuffer[4] = 0x00;
-				
+				UartTempData.sBuffer[4] = 0x00;				
 				UartTempData.sBuffer[5] = MagnetSensors.SensorValue[0]>>8;
-				UartTempData.sBuffer[6] = MagnetSensors.SensorValue[0];
+				UartTempData.sBuffer[6] = MagnetSensors.SensorValue[0];				
 				UartTempData.sBuffer[7] = MagnetSensors.SensorValue[1]>>8;
-				UartTempData.sBuffer[8] = MagnetSensors.SensorValue[1];
+				UartTempData.sBuffer[8] = MagnetSensors.SensorValue[1];			
 				UartTempData.sBuffer[9] = MagnetSensors.SensorValue[2]>>8;
-				UartTempData.sBuffer[10] = MagnetSensors.SensorValue[2];
-		
+				UartTempData.sBuffer[10] = MagnetSensors.SensorValue[2];			
 				UartTempData.sBuffer[11] = MagnetSensors.SensorValue[3]>>8;
-				UartTempData.sBuffer[12] = MagnetSensors.SensorValue[3];
+				UartTempData.sBuffer[12] = MagnetSensors.SensorValue[3];		
 				UartTempData.sBuffer[13] = MagnetSensors.SensorValue[4]>>8;
-				UartTempData.sBuffer[14] = MagnetSensors.SensorValue[4];
+				UartTempData.sBuffer[14] = MagnetSensors.SensorValue[4];	
 				UartTempData.sBuffer[15] = MagnetSensors.SensorValue[5]>>8;
 				UartTempData.sBuffer[16] = MagnetSensors.SensorValue[5];
-
 				UartTempData.sBuffer[17] = MagnetSensors.SensorValue[6]>>8;
 				UartTempData.sBuffer[18] = MagnetSensors.SensorValue[6];
 				UartTempData.sBuffer[19] = MagnetSensors.SensorValue[7]>>8;
-				UartTempData.sBuffer[20] = MagnetSensors.SensorValue[7];
-				UartTempData.sBuffer[21] = MagnetSensors.SensorValue[8]>>8;
-				UartTempData.sBuffer[22] = MagnetSensors.SensorValue[8];
-
-				UartTempData.sBuffer[23] = MagnetSensors.SensorValue[9]>>8;
-				UartTempData.sBuffer[24] = MagnetSensors.SensorValue[9];
-				UartTempData.sBuffer[25] = MagnetSensors.SensorValue[10]>>8;
-				UartTempData.sBuffer[26] = MagnetSensors.SensorValue[10];
-				UartTempData.sBuffer[27] = MagnetSensors.SensorValue[11]>>8;
-				UartTempData.sBuffer[28] = MagnetSensors.SensorValue[11];
-				
-				UartTempData.sBuffer[29] = MagnetSensors.SensorValue[12]>>8;
-				UartTempData.sBuffer[30] = MagnetSensors.SensorValue[12];
-				UartTempData.sBuffer[31] = MagnetSensors.SensorValue[13]>>8;
-				UartTempData.sBuffer[32] = MagnetSensors.SensorValue[13];
-				UartTempData.sBuffer[33] = MagnetSensors.SensorValue[14]>>8;
-				UartTempData.sBuffer[34] = MagnetSensors.SensorValue[14];
-											
-				UartTempData.sBuffer[35] = MagnetSensors.SenState>>8;
-				UartTempData.sBuffer[36] = MagnetSensors.SenState & 0x0F;
-				
-				UartTempData.sBuffer[37] = MagnetSensors.Xsection1>>8;			
-				UartTempData.sBuffer[39] = MagnetSensors.Xsection2>>8;			
-				UartTempData.sBuffer[41] = MagnetSensors.Xsection3>>8;
-				
-				if(MagnetSensors.XsectionNum==1){
-					UartTempData.sBuffer[38] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					UartTempData.sBuffer[40] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					UartTempData.sBuffer[42] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-				}
-				else if(MagnetSensors.XsectionNum==2){
-					UartTempData.sBuffer[38] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					UartTempData.sBuffer[40] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					UartTempData.sBuffer[42] = (MagnetSensors.Xsection2 * 0.1)-70;//->0.1mm
-				}
-				else if(MagnetSensors.XsectionNum==3){
-					UartTempData.sBuffer[38] = (MagnetSensors.Xsection1 * 0.1)-70;//->0.1mm
-					UartTempData.sBuffer[40] = (MagnetSensors.Xsection2 * 0.1)-70;//->0.1mm
-					UartTempData.sBuffer[42] = (MagnetSensors.Xsection3 * 0.1)-70;//->0.1mm
-				}
-				else{
-					UartTempData.sBuffer[38] = -120;//->0.1mm
-					UartTempData.sBuffer[40] = -120;//->0.1mm
-					UartTempData.sBuffer[42] = -120;//->0.1mm
-				}
-				
-				UartTempData.sBuffer[43] = 0xAE;
-				
+				UartTempData.sBuffer[20] = MagnetSensors.SensorValue[7];															
+				UartTempData.sBuffer[43] = 0xAE;				
 				UartTempData.sLen = 44;
 				SendUrtBuf(&UartTempData,Uartx3);
 			}
