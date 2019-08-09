@@ -129,6 +129,13 @@ void HwCfgInit()
 		STMFLASH_Write(FLASH_SAVE_ADDR,( uint32_t * )Parameter,100);
 	}
 	////////////
+	if(gSystemPara.RS232Bauderate>3 || gSystemPara.RS232Bauderate <0)
+		gSystemPara.RS232Bauderate = 0;
+	if(gSystemPara.RS485Bauderate>3 || gSystemPara.RS485Bauderate <0)
+		gSystemPara.RS485Bauderate = 0;
+	if(gSystemPara.CANBusBauderate>3 || gSystemPara.CANBusBauderate <0)
+		gSystemPara.CANBusBauderate = 1;
+	//
 	CfgUartx(Uartx3,gSystemPara.RS232Bauderate,Uart3TX,Uart3RX);
 	CfgUartx(Uartx6,gSystemPara.RS485Bauderate,Uart6TX,Uart6RX);
 	Uart6RS485RE;//

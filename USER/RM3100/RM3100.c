@@ -442,7 +442,7 @@ void MagIC_Measurement_All(void)
 		MagnetSensors.ReqConnectAllow = 1;
 		MagnetSensors.handShakeInterface = 1;
 	}
-	if(PCChangeParCap(&Uart3Data) || PCCalSensor(&Uart6Data)){//RS232 or RS485
+	if(PCChangeParCap(&Uart3Data) || PCChangeParCap(&Uart6Data)){//RS232 or RS485
 		MagnetSensors.cmdSaveParameter = 1;
 	}
 	if(PCCalSensor(&Uart3Data) || PCCalSensor(&Uart6Data)){//RS232 or RS485
@@ -517,6 +517,12 @@ bool PCChangeParCap(UrtBuf_type * pSrcBuf){
 					gSystemPara.WeightRateKg = pSrcBuf->rBuffer[degred+16];
 					gSystemPara.MagTapWide = pSrcBuf->rBuffer[degred+17];
 					gSystemPara.EnableAutoRest = pSrcBuf->rBuffer[degred+18];
+					if(gSystemPara.RS232Bauderate>3 || gSystemPara.RS232Bauderate <0)
+						gSystemPara.RS232Bauderate = 0;
+					if(gSystemPara.RS485Bauderate>3 || gSystemPara.RS485Bauderate <0)
+						gSystemPara.RS485Bauderate = 0;
+					if(gSystemPara.CANBusBauderate>3 || gSystemPara.CANBusBauderate <0)
+						gSystemPara.CANBusBauderate = 1;
 					result = 1;
 				}
 		}
