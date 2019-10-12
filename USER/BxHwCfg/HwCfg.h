@@ -228,6 +228,7 @@ typedef struct SysParameter_type
 	///////////////////////////
 	int32_t  Offset_Basic[10];
 	int16_t  Dev_Factor[10];
+	int8_t sign_Weight[10];
 	///////////////////////////
 }SysParameter_type;
 

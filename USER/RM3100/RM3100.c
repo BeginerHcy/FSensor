@@ -261,14 +261,14 @@ void MagIC_Measurement_All(void)
 	TempRaw[7] = Read_HX712(SSN8,DRDY8);
 	
 	
-	MagnetSensors.RawData[0] = (TempRaw[0] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[0]:TempRaw[0];
-	MagnetSensors.RawData[1] = (TempRaw[1] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[1]:TempRaw[1];
-	MagnetSensors.RawData[2] = (TempRaw[2] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[2]:TempRaw[2];
-	MagnetSensors.RawData[3] = (TempRaw[3] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[3]:TempRaw[3];
-	MagnetSensors.RawData[4] = (TempRaw[4] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[4]:TempRaw[4];
-	MagnetSensors.RawData[5] = (TempRaw[5] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[5]:TempRaw[5];
-	MagnetSensors.RawData[6] = (TempRaw[6] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[6]:TempRaw[6];
-	MagnetSensors.RawData[7] = (TempRaw[7] & 0x0000FFFF == 0x0000FFFF)?MagnetSensors.RawData[7]:TempRaw[7];
+	MagnetSensors.RawData[0] = ((TempRaw[0] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[0]:TempRaw[0];
+	MagnetSensors.RawData[1] = ((TempRaw[1] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[1]:TempRaw[1];
+	MagnetSensors.RawData[2] = ((TempRaw[2] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[2]:TempRaw[2];
+	MagnetSensors.RawData[3] = ((TempRaw[3] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[3]:TempRaw[3];
+	MagnetSensors.RawData[4] = ((TempRaw[4] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[4]:TempRaw[4];
+	MagnetSensors.RawData[5] = ((TempRaw[5] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[5]:TempRaw[5];
+	MagnetSensors.RawData[6] = ((TempRaw[6] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[6]:TempRaw[6];
+	MagnetSensors.RawData[7] = ((TempRaw[7] & 0x0000FFFF) == 0x0000FFFF)?MagnetSensors.RawData[7]:TempRaw[7];
 	
 	
 	//////////////////////////////////////////////////////////////////////////////
@@ -314,8 +314,13 @@ void MagIC_Measurement_All(void)
 			}
 			MagnetSensors.cmdCalWeigh[i] = 0;
 		}
+		if(MagnetSensors.cmdChangeSign[i]){
+			gSystemPara.sign_Weight[i] = gSystemPara.sign_Weight[i] * -1;
+			MagnetSensors.cmdSaveParameter = 1;
+			MagnetSensors.cmdChangeSign[i] = 0;
+		}
 		////////////////////////////////////////////////////////////////////////////
-		MagnetSensors.ValWeigh_g[i] = ( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / ( 1 - ( gSystemPara.Dev_Factor[i] / 4000.0 )) * scaleRateWeight / BasicFactor;
+		MagnetSensors.ValWeigh_g[i] = gSystemPara.sign_Weight[i] * ( MagnetSensors.RawData[i] - gSystemPara.Offset_Basic[i] ) / ( 1 - ( gSystemPara.Dev_Factor[i] / 4000.0 )) * scaleRateWeight / BasicFactor;
 	}
 	///////////////////////////////////////////////////////////////////
 	led0pwmval = 500;
@@ -348,9 +353,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[0] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
+					else if(1==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
+					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
 						MagnetSensors.cmdSendRS232Data = 1;
 				}
 				break;
@@ -361,9 +366,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[1] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
+					else if(1==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
+					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}
 				break;
@@ -374,9 +379,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[2] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
+					else if(1==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
+					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}
 				break;
@@ -387,9 +392,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[3] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
+					else if(1==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
+					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}			
 				break;		
@@ -400,9 +405,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[4] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
+					else if(1==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
+					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}			
 				break;
@@ -413,9 +418,9 @@ void MagIC_Measurement_All(void)
 					OldStamp[3] = 0;
 					if(0==gSystemPara.DataComInterface)//CAN
 						MagnetSensors.cmdSendCanData = 1;
-					else if(1==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==0))//RS485
+					else if(1==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS485
 						MagnetSensors.cmdSendRS485Data = 1;
-					else if(2==gSystemPara.DataComInterface && (!MagnetSensors.cmdPCConnect || MagnetSensors.handShakeInterface==1))//RS232
+					else if(2==gSystemPara.DataComInterface && !MagnetSensors.cmdPCConnect)//RS232
 						MagnetSensors.cmdSendRS232Data = 1;				
 				}			
 				break;	
@@ -496,7 +501,8 @@ bool PCChangeParCap(UrtBuf_type * pSrcBuf){
 	{
 		for(;degred<=filled-1;degred++)
 		{
-			if( pSrcBuf->rBuffer[degred]==0xAA && 
+			if(filled >= degred+ chnOKBfLen){
+				if( pSrcBuf->rBuffer[degred]==0xAA && 
 					pSrcBuf->rBuffer[degred+1]==0x54&&
 					pSrcBuf->rBuffer[degred+2]==0x11&&
 					pSrcBuf->rBuffer[degred+3]==0x00&&
@@ -525,6 +531,7 @@ bool PCChangeParCap(UrtBuf_type * pSrcBuf){
 						gSystemPara.CANBusBauderate = 1;
 					result = 1;
 				}
+			}
 		}
 	}
 	return result;
@@ -544,7 +551,8 @@ bool PCCalSensor(UrtBuf_type * pSrcBuf){
 	{
 		for(;degred<=filled-1;degred++)
 		{
-			if( pSrcBuf->rBuffer[degred]==0xAA && 
+			if(filled >= degred+ chnOKBfLen){
+				if( pSrcBuf->rBuffer[degred]==0xAA && 
 					pSrcBuf->rBuffer[degred+1]==0x51&&
 					pSrcBuf->rBuffer[degred+2]==0x0B&&
 					pSrcBuf->rBuffer[degred+3]==0x00&&
@@ -556,8 +564,10 @@ bool PCCalSensor(UrtBuf_type * pSrcBuf){
 					MagnetSensors.SetcalWeigh[SensorIndex-1] 	= pSrcBuf->rBuffer[degred+6] * 100.0;
 					MagnetSensors.cmdSetZero[SensorIndex-1] 	= (pSrcBuf->rBuffer[degred+7]==1);
 					MagnetSensors.cmdCalWeigh[SensorIndex-1] 	= (pSrcBuf->rBuffer[degred+8]==1);
+					MagnetSensors.cmdChangeSign[SensorIndex-1] 	= (pSrcBuf->rBuffer[degred+9]==1);
 					result = 1;
 				}
+			}
 		}
 	}
 	return result;
@@ -577,7 +587,8 @@ bool HandShakeCap(UrtBuf_type * pSrcBuf)
 	{
 		for(;degred<=filled-1;degred++)
 		{
-			if(pSrcBuf->rBuffer[degred]==0xAA && 
+			if(filled >= degred+ chnOKBfLen){
+				if(pSrcBuf->rBuffer[degred]==0xAA && 
 					pSrcBuf->rBuffer[degred+1]==0x55&&
 					pSrcBuf->rBuffer[degred+2]==0x04&&
 					pSrcBuf->rBuffer[degred+3]==0x00&&
@@ -588,6 +599,7 @@ bool HandShakeCap(UrtBuf_type * pSrcBuf)
 					pSrcBuf->pRder = degred+chnOKBfLen-1;
 					result = 1;
 				}
+			}
 		}
 	}
 	return result;
@@ -607,18 +619,20 @@ bool ComRequestCap(UrtBuf_type * pSrcBuf)
 	{
 		for(;degred<=filled-1;degred++)
 		{
-			if(pSrcBuf->rBuffer[degred]==0x52 && 
-					pSrcBuf->rBuffer[degred+1]==0x4D &&
-					pSrcBuf->rBuffer[degred+2]==0x67 &&
-					pSrcBuf->rBuffer[degred+3]==0x73 &&
-					pSrcBuf->rBuffer[degred+4]==0x77 &&
-					pSrcBuf->rBuffer[degred+5]==0x5E &&
-					pSrcBuf->rBuffer[degred+6]==0x69)
-			{
-				if(filled >= degred+ chnOKBfLen){
-					cycResult = CRC_Verify(&(pSrcBuf->rBuffer[degred]),5);//
-					pSrcBuf->pRder = degred+chnOKBfLen-1;
-					result = 1;
+			if(filled >= degred+ chnOKBfLen){
+				if(pSrcBuf->rBuffer[degred]==0x52 && 
+						pSrcBuf->rBuffer[degred+1]==0x4D &&
+						pSrcBuf->rBuffer[degred+2]==0x67 &&
+						pSrcBuf->rBuffer[degred+3]==0x73 &&
+						pSrcBuf->rBuffer[degred+4]==0x77 &&
+						pSrcBuf->rBuffer[degred+5]==0x5E &&
+						pSrcBuf->rBuffer[degred+6]==0x69)
+				{
+					if(filled >= degred+ chnOKBfLen){
+						cycResult = CRC_Verify(&(pSrcBuf->rBuffer[degred]),5);//
+						pSrcBuf->pRder = degred+chnOKBfLen-1;
+						result = 1;
+					}
 				}
 			}
 		}

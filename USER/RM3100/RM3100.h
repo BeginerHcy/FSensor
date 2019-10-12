@@ -35,6 +35,7 @@ typedef struct
 	float ValWeigh_g[10];	
 	bool	cmdSetZero[10];
 	bool  cmdCalWeigh[10];
+	bool  cmdChangeSign[10];
 	float SetcalWeigh[10];
 	float ValWeigh_g_flt[10];
 	////////////////

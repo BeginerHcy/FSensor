@@ -135,6 +135,11 @@ void HwCfgInit()
 		gSystemPara.RS485Bauderate = 0;
 	if(gSystemPara.CANBusBauderate>3 || gSystemPara.CANBusBauderate <0)
 		gSystemPara.CANBusBauderate = 1;
+	
+	for(int i=0;i<8;i++){
+		if(gSystemPara.sign_Weight[i]==0||gSystemPara.sign_Weight[i]>1||gSystemPara.sign_Weight[i]<-1)
+			gSystemPara.sign_Weight[i]=1;
+	}
 	//
 	CfgUartx(Uartx3,gSystemPara.RS232Bauderate,Uart3TX,Uart3RX);
 	CfgUartx(Uartx6,gSystemPara.RS485Bauderate,Uart6TX,Uart6RX);
